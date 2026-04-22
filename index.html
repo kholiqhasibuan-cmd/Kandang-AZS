@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SiQurban">
+<meta name="theme-color" content="#d4a843">
+<meta name="description" content="Sistem POS Hewan Qurban">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>SiQurban POS</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d1117; --bg2:#161b22; --bg3:#21262d; --border:#30363d;
+  --gold:#d4a843; --gold2:#f0c96e;
+  --green:#2ea043; --green2:#3fb950;
+  --red:#da3633; --red2:#f85149;
+  --blue:#388bfd;
+  --text:#e6edf3; --text2:#8b949e; --text3:#484f58;
+  --radius:12px; --shadow:0 8px 32px rgba(0,0,0,.5);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;touch-action:manipulation;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);overscroll-behavior:none;}
+
+/* ── SPLASH SCREEN ── */
+#splash{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s;}
+#splash.hide{opacity:0;pointer-events:none;}
+.splash-logo{font-size:72px;animation:bounce 1s ease infinite alternate;}
+.splash-name{font-family:'Amiri',serif;font-size:32px;color:var(--gold);margin-top:12px;}
+.splash-sub{font-size:12px;color:var(--text2);letter-spacing:.12em;text-transform:uppercase;margin-top:6px;}
+.splash-bar{width:160px;height:3px;background:var(--bg3);border-radius:4px;margin-top:32px;overflow:hidden;}
+.splash-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:4px;animation:load 1.6s ease forwards;}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-12px)}}
+@keyframes load{from{width:0}to{width:100%}}
+
+/* ── INSTALL BANNER ── */
+#install-banner{position:fixed;bottom:calc(60px + var(--safe-bottom));left:12px;right:12px;background:var(--bg2);border:1px solid var(--gold);border-radius:var(--radius);padding:14px 16px;z-index:500;display:none;box-shadow:var(--shadow);animation:slideUp .3s;}
+.install-inner{display:flex;align-items:center;gap:12px;}
+.install-icon{font-size:28px;flex-shrink:0;}
+.install-text{flex:1;}
+.install-title{font-size:13px;font-weight:700;}
+.install-desc{font-size:11px;color:var(--text2);margin-top:2px;}
+.install-actions{display:flex;gap:8px;margin-top:10px;}
+
+/* ── OFFLINE BANNER ── */
+#offline-banner{position:fixed;top:0;left:0;right:0;background:var(--red);color:#fff;text-align:center;padding:8px;font-size:12px;font-weight:600;z-index:600;transform:translateY(-100%);transition:.3s;}
+#offline-banner.show{transform:translateY(0);}
+
+/* ── APP SHELL ── */
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
+
+/* ── TOP BAR ── */
+#topbar{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:calc(var(--safe-top) + 10px) 16px 10px;
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.topbar-left{display:flex;align-items:center;gap:10px;}
+.topbar-logo{font-family:'Amiri',serif;font-size:20px;color:var(--gold);}
+.topbar-info{line-height:1.3;}
+.topbar-title{font-size:14px;font-weight:700;}
+.topbar-date{font-size:10px;color:var(--text2);}
+.topbar-right{display:flex;gap:6px;}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;}
+.badge-gold{background:rgba(212,168,67,.15);color:var(--gold);}
+.badge-green{background:rgba(46,160,67,.15);color:var(--green2);}
+
+/* ── CONTENT ── */
+#content{flex:1;overflow:hidden;position:relative;}
+.page{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;display:none;padding-bottom:calc(16px + var(--safe-bottom));}
+.page.active{display:block;}
+
+/* ── BOTTOM NAV ── */
+#bottom-nav{
+  background:var(--bg2);border-top:1px solid var(--border);
+  padding:8px 0 calc(8px + var(--safe-bottom));
+  display:flex;flex-shrink:0;
+}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 4px;border:none;background:none;color:var(--text2);font-family:inherit;transition:.15s;}
+.nav-btn svg{width:20px;height:20px;}
+.nav-btn span{font-size:10px;font-weight:600;}
+.nav-btn.active{color:var(--gold);}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+.card+.card,.card+.grid2,.grid2+.card,.grid2+.grid2{margin-top:12px;}
+.card-title{font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.card-value{font-size:22px;font-weight:800;}
+.card-sub{font-size:10px;color:var(--text2);margin-top:2px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* ── SECTION ── */
+.section-title{font-size:15px;font-weight:800;margin-bottom:12px;}
+.row-between{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:.15s;font-family:inherit;min-height:44px;}
+.btn-primary{background:var(--gold);color:#0d1117;}
+.btn-primary:active{background:var(--gold2);}
+.btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border);}
+.btn-green{background:var(--green);color:#fff;}
+.btn-red{background:rgba(218,54,51,.15);color:var(--red2);border:1px solid rgba(218,54,51,.3);}
+.btn-sm{padding:7px 12px;font-size:11px;min-height:36px;}
+.btn-block{width:100%;}
+
+/* ── FORMS ── */
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.form-group label{font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+.form-group input,.form-group select,.form-group textarea{
+  background:var(--bg3);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);padding:11px 14px;font-size:14px;font-family:inherit;
+  transition:.15s;outline:none;min-height:44px;-webkit-appearance:none;
+}
+.form-group input:focus,.form-group select:focus{border-color:var(--gold);}
+.form-group select option{background:var(--bg3);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* ── POS ── */
+.animal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;}
+.animal-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;transition:.15s;active:opacity:.7;position:relative;overflow:hidden;}
+.animal-card:active{transform:scale(.97);border-color:var(--gold);}
+.animal-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold2));}
+.animal-emoji{font-size:28px;margin-bottom:6px;}
+.animal-name{font-size:13px;font-weight:700;line-height:1.3;}
+.animal-price{font-size:12px;color:var(--gold);font-weight:700;margin-top:3px;}
+.animal-stock{font-size:10px;color:var(--text2);margin-top:2px;}
+.animal-stock.low{color:var(--red2);}
+
+/* ── CART ── */
+.cart-item{background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:8px;}
+.cart-item-name{font-size:13px;font-weight:700;}
+.cart-item-row{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
+.qty-ctrl{display:flex;align-items:center;gap:10px;}
+.qty-btn{width:34px;height:34px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;}
+.qty-btn:active{border-color:var(--gold);color:var(--gold);}
+.qty-num{font-size:15px;font-weight:800;min-width:24px;text-align:center;}
+.cart-item-price{font-size:13px;font-weight:700;color:var(--gold);}
+.empty-cart{text-align:center;padding:40px 20px;color:var(--text3);}
+.empty-cart .ec-icon{font-size:48px;display:block;margin-bottom:8px;}
+
+/* ── TOTAL AREA ── */
+.total-area{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-top:12px;}
+.total-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;}
+.total-row.final{font-size:17px;font-weight:800;color:var(--gold);padding-top:8px;margin-top:4px;border-top:1px solid var(--border);}
+.kembalian-row{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--green2);margin-top:6px;}
+
+/* ── TABLE ── */
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:480px;}
+th{background:var(--bg3);color:var(--text2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid rgba(48,54,61,.5);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+
+/* ── STOCK PROGRESS ── */
+.stock-bar{background:var(--bg3);border-radius:4px;height:5px;overflow:hidden;margin-top:4px;}
+.stock-fill{height:100%;border-radius:4px;}
+
+/* ── MODAL ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:flex;align-items:flex-end;animation:fadeIn .15s;}
+.modal{background:var(--bg2);border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding-bottom:var(--safe-bottom);animation:slideUp .25s;}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:4px;margin:12px auto 16px;}
+.modal-title{font-size:16px;font-weight:800;padding:0 20px 14px;border-bottom:1px solid var(--border);}
+.modal-body{padding:16px 20px;}
+.modal-actions{padding:12px 20px;display:flex;gap:10px;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── TOAST ── */
+#toast{position:fixed;top:calc(var(--safe-top) + 70px);left:16px;right:16px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast-item{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:12px 16px;font-size:13px;font-weight:600;animation:slideUp .2s;box-shadow:var(--shadow);border-left:4px solid var(--green);}
+.toast-item.err{border-left-color:var(--red);}
+
+/* ── INVOICE PRINT ── */
+#invoice-print{display:none;}
+@media print{
+  #splash,#install-banner,#offline-banner,#app{display:none!important;}
+  #invoice-print{display:block!important;font-family:'Plus Jakarta Sans',sans-serif;padding:20px;color:#111;font-size:12px;}
+  .inv-header{display:flex;justify-content:space-between;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #000;}
+  .inv-title{font-size:22px;font-weight:800;}
+  .inv-table{width:100%;border-collapse:collapse;margin:16px 0;}
+  .inv-table th{background:#f0f0f0;padding:7px 10px;font-size:10px;text-transform:uppercase;}
+  .inv-table td{padding:7px 10px;border-bottom:1px solid #eee;}
+  .inv-total{text-align:right;margin-top:12px;}
+  .inv-total-final{font-size:16px;font-weight:800;}
+  .inv-stamps{display:flex;gap:30px;margin-top:24px;}
+  .inv-stamp{border:1px solid #ccc;padding:8px 16px;min-width:110px;min-height:70px;text-align:center;font-size:11px;}
+  .inv-footer{margin-top:20px;text-align:center;font-size:10px;color:#888;border-top:1px solid #ddd;padding-top:10px;}
+}
+
+/* ── MISC ── */
+.text-gold{color:var(--gold);}
+.text-green{color:var(--green2);}
+.text-red{color:var(--red2);}
+.text-muted{color:var(--text2);}
+.fw-bold{font-weight:700;}
+.divider{height:1px;background:var(--border);margin:12px 0;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo">🐄</div>
+  <div class="splash-name">SiQurban</div>
+  <div class="splash-sub">Sistem POS Hewan Qurban</div>
+  <div class="splash-bar"><div class="splash-fill"></div></div>
+</div>
+
+<!-- OFFLINE BANNER -->
+<div id="offline-banner">📵 Tidak ada koneksi internet — Mode Offline</div>
+
+<!-- INSTALL BANNER -->
+<div id="install-banner">
+  <div class="install-inner">
+    <div class="install-icon">📲</div>
+    <div class="install-text">
+      <div class="install-title">Install SiQurban ke HP</div>
+      <div class="install-desc">Bisa dipakai offline, seperti aplikasi biasa</div>
+    </div>
+  </div>
+  <div class="install-actions">
+    <button class="btn btn-primary btn-sm" id="install-btn" style="flex:1;">Install Sekarang</button>
+    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('install-banner').style.display='none'">Nanti</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div id="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">🐄</div>
+      <div class="topbar-info">
+        <div class="topbar-title" id="page-title">Dashboard</div>
+        <div class="topbar-date" id="page-date"></div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="badge badge-gold" id="badge-stock">0 Ekor</span>
+      <span class="badge badge-green" id="badge-sold">0 Terjual</span>
+    </div>
+  </div>
+
+  <div id="content">
+    <!-- ═════ DASHBOARD ═════ -->
+    <div class="page active" id="page-dashboard">
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Pendapatan Hari Ini</div>
+          <div class="card-value text-gold" id="d-revenue" style="font-size:16px;">Rp 0</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Transaksi Hari Ini</div>
+          <div class="card-value" id="d-tx">0</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Stok Tersisa</div>
+          <div class="card-value" id="d-stock">0 Ekor</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Total Terjual</div>
+          <div class="card-value text-green" id="d-sold">0</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px;">
+        <div class="section-title">Stok Per Jenis</div>
+        <div id="d-stock-list"></div>
+      </div>
+
+      <div class="card" style="margin-top:12px;">
+        <div class="section-title">Transaksi Terbaru</div>
+        <div id="d-recent-tx"></div>
+      </div>
+    </div>
+
+    <!-- ═════ POS ═════ -->
+    <div class="page" id="page-pos">
+      <div id="pos-customer-form" style="margin-bottom:14px;">
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Nama Pembeli</label>
+            <input type="text" id="buyer-name" placeholder="Nama pembeli...">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>No. HP</label>
+            <input type="tel" id="buyer-phone" placeholder="08xx...">
+          </div>
+        </div>
+      </div>
+
+      <div class="row-between">
+        <div class="section-title" style="margin-bottom:0;">Pilih Hewan</div>
+        <input type="search" id="pos-search" placeholder="Cari..." oninput="renderAnimalGrid()"
+          style="width:110px;padding:7px 10px;font-size:12px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);">
+      </div>
+      <div class="animal-grid" id="animal-grid"></div>
+
+      <div id="cart-section">
+        <div class="divider"></div>
+        <div class="row-between">
+          <div class="section-title" style="margin-bottom:0;">Keranjang</div>
+          <button class="btn btn-red btn-sm" onclick="clearCart()">Kosongkan</button>
+        </div>
+        <div id="cart-body">
+          <div class="empty-cart"><span class="ec-icon">🛒</span>Keranjang masih kosong</div>
+        </div>
+
+        <div class="total-area">
+          <div class="total-row"><span class="text-muted">Subtotal</span><span id="cart-subtotal">Rp 0</span></div>
+          <div class="total-row">
+            <span class="text-muted">Diskon (Rp)</span>
+            <input type="number" id="cart-discount" value="0" min="0"
+              style="width:100px;padding:4px 8px;font-size:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);text-align:right;"
+              oninput="updateCartTotal()">
+          </div>
+          <div class="total-row final"><span>TOTAL</span><span id="cart-total">Rp 0</span></div>
+        </div>
+
+        <div class="form-group" style="margin-top:12px;">
+          <label>Metode Pembayaran</label>
+          <select id="pay-method" onchange="toggleBayar()">
+            <option>Tunai</option><option>Transfer Bank</option><option>QRIS</option><option>Kredit/Cicilan</option>
+          </select>
+        </div>
+        <div class="form-group" id="bayar-wrap">
+          <label>Jumlah Dibayar (Rp)</label>
+          <input type="number" id="bayar-input" placeholder="0" inputmode="numeric" oninput="updateKembalian()">
+        </div>
+        <div class="kembalian-row" id="kembalian-row" style="display:none;">
+          <span>💰 Kembalian</span><span id="kembalian-val">Rp 0</span>
+        </div>
+        <div class="form-group">
+          <label>Catatan</label>
+          <input type="text" id="buyer-note" placeholder="Opsional...">
+        </div>
+        <button class="btn btn-primary btn-block" style="margin-top:4px;padding:14px;" onclick="checkout()">
+          ✅ Proses Transaksi
+        </button>
+      </div>
+    </div>
+
+    <!-- ═════ STOCK ═════ -->
+    <div class="page" id="page-stock">
+      <div class="row-between">
+        <div class="section-title" style="margin-bottom:0;">Stok Hewan</div>
+        <button class="btn btn-primary btn-sm" onclick="openAnimalModal()">+ Tambah</button>
+      </div>
+      <div id="stock-list"></div>
+    </div>
+
+    <!-- ═════ TRANSACTIONS ═════ -->
+    <div class="page" id="page-transactions">
+      <div class="row-between">
+        <div class="section-title" style="margin-bottom:0;">Riwayat</div>
+        <input type="date" id="tx-filter" style="font-size:11px;padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);" oninput="renderTransactions()">
+      </div>
+      <div id="tx-list"></div>
+    </div>
+
+    <!-- ═════ REPORT ═════ -->
+    <div class="page" id="page-report">
+      <div class="section-title">Laporan Keuangan</div>
+      <div class="form-row">
+        <div class="form-group"><label>Dari</label><input type="date" id="rpt-from"></div>
+        <div class="form-group"><label>Sampai</label><input type="date" id="rpt-to"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <button class="btn btn-primary" style="flex:1;" onclick="generateReport()">Tampilkan</button>
+        <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Cetak</button>
+      </div>
+      <div class="grid2">
+        <div class="card"><div class="card-title">Total Penjualan</div><div class="card-value text-gold" id="r-total" style="font-size:16px;">Rp 0</div></div>
+        <div class="card"><div class="card-title">Total Modal</div><div class="card-value text-red" id="r-modal" style="font-size:16px;">Rp 0</div></div>
+        <div class="card"><div class="card-title">Laba Kotor</div><div class="card-value text-green" id="r-laba" style="font-size:16px;">Rp 0</div></div>
+        <div class="card"><div class="card-title">Jml Transaksi</div><div class="card-value" id="r-count">0</div></div>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <div class="section-title">Per Jenis Hewan</div>
+        <div id="r-by-type"></div>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <div class="section-title">Detail Transaksi</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Invoice</th><th>Tanggal</th><th>Pembeli</th><th>Total</th><th>Laba</th></tr></thead>
+            <tbody id="r-tx-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═════ SETTINGS ═════ -->
+    <div class="page" id="page-settings">
+      <div class="section-title">Pengaturan</div>
+      <div class="card">
+        <div class="fw-bold" style="margin-bottom:14px;">Identitas Usaha</div>
+        <div class="form-group"><label>Nama Usaha</label><input type="text" id="s-name"></div>
+        <div class="form-group"><label>Alamat</label><textarea id="s-address" rows="2" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:11px 14px;font-size:14px;font-family:inherit;outline:none;width:100%;resize:none;"></textarea></div>
+        <div class="form-group"><label>No. HP</label><input type="tel" id="s-phone"></div>
+        <div class="form-group"><label>Kota</label><input type="text" id="s-city"></div>
+        <div class="form-group"><label>Catatan Invoice</label><input type="text" id="s-inv-note"></div>
+        <button class="btn btn-primary btn-block" onclick="saveSettings()">💾 Simpan</button>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <div class="fw-bold" style="margin-bottom:12px;">Data & Backup</div>
+        <button class="btn btn-secondary btn-block" style="margin-bottom:10px;" onclick="exportData()">📤 Export Backup (JSON)</button>
+        <button class="btn btn-red btn-block" onclick="resetAll()">🗑️ Reset Semua Data</button>
+      </div>
+      <div class="card" style="margin-top:12px;text-align:center;">
+        <div style="font-size:28px;margin-bottom:6px;">🐄</div>
+        <div style="font-family:'Amiri',serif;font-size:18px;color:var(--gold);">SiQurban POS</div>
+        <div class="text-muted" style="font-size:11px;margin-top:4px;">Versi 2.0 PWA • Data tersimpan offline</div>
+      </div>
+    </div>
+  </div><!-- /content -->
+
+  <!-- BOTTOM NAV -->
+  <div id="bottom-nav">
+    <button class="nav-btn active" onclick="nav('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Beranda</span>
+    </button>
+    <button class="nav-btn" onclick="nav('pos')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      <span>Transaksi</span>
+    </button>
+    <button class="nav-btn" onclick="nav('stock')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      <span>Stok</span>
+    </button>
+    <button class="nav-btn" onclick="nav('transactions')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span>Riwayat</span>
+    </button>
+    <button class="nav-btn" onclick="nav('report')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>Laporan</span>
+    </button>
+    <button class="nav-btn" onclick="nav('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M4.93 19.07l1.41-1.41M19.07 19.07l-1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+      <span>Setting</span>
+    </button>
+  </div>
+</div><!-- /app -->
+
+<div id="modal-container"></div>
+<div id="toast"></div>
+<div id="invoice-print"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════
+const EMOJI = {Sapi:'🐄',Kambing:'🐐',Domba:'🐑',Unta:'🐪',Kerbau:'🐃',Lainnya:'🐾'};
+const fmt = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+const fmtD = d => new Date(d).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+const fmtT = d => new Date(d).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+
+let S = {
+  animals: [],
+  transactions: [],
+  cart: [],
+  settings: {
+    name:'Usaha Hewan Qurban Barokah',
+    address:'Jl. Raya Qurban No. 1',
+    phone:'08123456789',
+    city:'Jakarta',
+    invNote:'Terima kasih. Barakallah.'
+  }
+};
+
+function load() {
+  const d = localStorage.getItem('siqurban_pwa_v2');
+  if (d) { try { S = {...S,...JSON.parse(d)}; } catch(e){} }
+  else {
+    S.animals = [
+      {id:'A1',type:'Sapi',name:'Sapi Limosin',weight:300,price:18000000,modal:14000000,stock:5,condition:'Sehat'},
+      {id:'A2',type:'Sapi',name:'Sapi Brahman',weight:280,price:16500000,modal:12500000,stock:3,condition:'Sehat'},
+      {id:'A3',type:'Kambing',name:'Kambing PE',weight:35,price:2800000,modal:2000000,stock:12,condition:'Sehat'},
+      {id:'A4',type:'Kambing',name:'Kambing Etawa',weight:40,price:3200000,modal:2300000,stock:8,condition:'Sehat'},
+      {id:'A5',type:'Domba',name:'Domba Garut',weight:45,price:3500000,modal:2600000,stock:6,condition:'Sehat'},
+      {id:'A6',type:'Unta',name:'Unta Arabian',weight:500,price:65000000,modal:50000000,stock:1,condition:'Sehat'},
+    ];
+    save();
+  }
+}
+
+function save() { localStorage.setItem('siqurban_pwa_v2', JSON.stringify(S)); }
+
+// ══════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════
+const TITLES = {dashboard:'Dashboard',pos:'Transaksi POS',stock:'Stok Hewan',transactions:'Riwayat',report:'Laporan Keuangan',settings:'Pengaturan'};
+
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>{if(b.getAttribute('onclick')?.includes(page)) b.classList.add('active');});
+  document.getElementById('page-title').textContent = TITLES[page];
+  if(page==='dashboard') renderDashboard();
+  if(page==='pos') renderAnimalGrid();
+  if(page==='stock') renderStockList();
+  if(page==='transactions') renderTransactions();
+  if(page==='report') initReport();
+  if(page==='settings') loadSettings();
+  updateBadges();
+}
+
+// ══════════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════════
+function toast(msg, err=false) {
+  const el = document.createElement('div');
+  el.className = 'toast-item'+(err?' err':'');
+  el.textContent = msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(()=>el.remove(), 3000);
+}
+
+function updateBadges() {
+  const stk = S.animals.reduce((s,a)=>s+a.stock,0);
+  const sold = S.transactions.reduce((s,t)=>s+t.items.reduce((ss,i)=>ss+i.qty,0),0);
+  document.getElementById('badge-stock').textContent = stk+' Ekor';
+  document.getElementById('badge-sold').textContent = sold+' Terjual';
+}
+
+// ══════════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════════
+function renderDashboard() {
+  const today = new Date().toDateString();
+  const todayTx = S.transactions.filter(t=>new Date(t.date).toDateString()===today);
+  document.getElementById('d-revenue').textContent = fmt(todayTx.reduce((s,t)=>s+t.total,0));
+  document.getElementById('d-tx').textContent = todayTx.length;
+  document.getElementById('d-stock').textContent = S.animals.reduce((s,a)=>s+a.stock,0)+' Ekor';
+  document.getElementById('d-sold').textContent = S.transactions.reduce((s,t)=>s+t.items.reduce((ss,i)=>ss+i.qty,0),0);
+
+  const types = [...new Set(S.animals.map(a=>a.type))];
+  document.getElementById('d-stock-list').innerHTML = types.map(type=>{
+    const total = S.animals.filter(a=>a.type===type).reduce((s,a)=>s+a.stock,0);
+    const sold = S.transactions.reduce((s,t)=>s+t.items.filter(i=>i.type===type).reduce((ss,i)=>ss+i.qty,0),0);
+    const pct = Math.min(100, total/(total+sold+0.01)*100);
+    return `<div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+        <span>${EMOJI[type]||'🐾'} ${type}</span><span class="fw-bold">${total} ekor</span>
+      </div>
+      <div class="stock-bar"><div class="stock-fill" style="width:${pct}%;background:${pct<20?'var(--red)':'var(--gold)'};"></div></div>
+    </div>`;
+  }).join('');
+
+  const recent = [...S.transactions].reverse().slice(0,5);
+  document.getElementById('d-recent-tx').innerHTML = recent.length
+    ? recent.map(t=>`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);">
+        <div><div style="font-size:13px;font-weight:700;">${t.buyer}</div><div class="text-muted" style="font-size:10px;">${t.invNo} · ${fmtD(t.date)}</div></div>
+        <div class="text-gold fw-bold" style="font-size:13px;">${fmt(t.total)}</div>
+      </div>`).join('')
+    : '<div class="text-muted" style="text-align:center;padding:20px 0;font-size:12px;">Belum ada transaksi</div>';
+}
+
+// ══════════════════════════════════════════════
+//  POS
+// ══════════════════════════════════════════════
+function renderAnimalGrid() {
+  const q = (document.getElementById('pos-search')?.value||'').toLowerCase();
+  const filtered = S.animals.filter(a=>a.stock>0&&(a.name.toLowerCase().includes(q)||a.type.toLowerCase().includes(q)));
+  const g = document.getElementById('animal-grid');
+  g.innerHTML = filtered.length
+    ? filtered.map(a=>`<div class="animal-card" onclick="addToCart('${a.id}')">
+        <div class="animal-emoji">${EMOJI[a.type]||'🐾'}</div>
+        <div class="animal-name">${a.name}</div>
+        <div class="animal-price">${fmt(a.price)}</div>
+        <div class="animal-stock${a.stock<=2?' low':''}">${a.stock} ekor tersisa</div>
+      </div>`).join('')
+    : '<div class="text-muted" style="text-align:center;padding:30px;grid-column:1/-1;font-size:12px;">Tidak ada hewan tersedia</div>';
+}
+
+function addToCart(id) {
+  const a = S.animals.find(x=>x.id===id);
+  if(!a||a.stock<=0){toast('Stok habis!',true);return;}
+  const ex = S.cart.find(c=>c.animalId===id);
+  if(ex){if(ex.qty>=a.stock){toast('Stok tidak cukup!',true);return;}ex.qty++;}
+  else S.cart.push({animalId:id,name:a.name,price:a.price,modal:a.modal,qty:1,type:a.type});
+  renderCart();
+}
+
+function changeQty(id,d) {
+  const idx = S.cart.findIndex(c=>c.animalId===id);
+  if(idx<0)return;
+  const a = S.animals.find(x=>x.id===id);
+  S.cart[idx].qty = Math.max(0,Math.min(a.stock,S.cart[idx].qty+d));
+  if(S.cart[idx].qty===0) S.cart.splice(idx,1);
+  renderCart();
+}
+
+function clearCart(){S.cart=[];renderCart();}
+
+function renderCart() {
+  const body = document.getElementById('cart-body');
+  updateCartTotal();
+  if(!S.cart.length){
+    body.innerHTML='<div class="empty-cart"><span class="ec-icon">🛒</span>Keranjang masih kosong</div>';
+    return;
+  }
+  body.innerHTML = S.cart.map(c=>`
+    <div class="cart-item">
+      <div class="cart-item-name">${EMOJI[c.type]||'🐾'} ${c.name}</div>
+      <div class="cart-item-row">
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="changeQty('${c.animalId}',-1)">−</button>
+          <span class="qty-num">${c.qty}</span>
+          <button class="qty-btn" onclick="changeQty('${c.animalId}',1)">+</button>
+        </div>
+        <div class="cart-item-price">${fmt(c.price*c.qty)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function updateCartTotal() {
+  const sub = S.cart.reduce((s,c)=>s+c.price*c.qty,0);
+  const disc = parseFloat(document.getElementById('cart-discount')?.value)||0;
+  const total = Math.max(0,sub-disc);
+  document.getElementById('cart-subtotal').textContent = fmt(sub);
+  document.getElementById('cart-total').textContent = fmt(total);
+  updateKembalian();
+}
+
+function toggleBayar() {
+  const m = document.getElementById('pay-method').value;
+  document.getElementById('bayar-wrap').style.display = m==='Tunai'?'flex':'none';
+  document.getElementById('kembalian-row').style.display='none';
+}
+
+function updateKembalian() {
+  const sub = S.cart.reduce((s,c)=>s+c.price*c.qty,0);
+  const disc = parseFloat(document.getElementById('cart-discount')?.value)||0;
+  const total = Math.max(0,sub-disc);
+  const bayar = parseFloat(document.getElementById('bayar-input')?.value)||0;
+  const m = document.getElementById('pay-method')?.value;
+  const row = document.getElementById('kembalian-row');
+  if(m==='Tunai'&&bayar>0){
+    row.style.display='flex';
+    const k = bayar-total;
+    document.getElementById('kembalian-val').textContent = fmt(Math.max(0,k));
+    document.getElementById('kembalian-val').style.color = k<0?'var(--red2)':'var(--green2)';
+  } else row.style.display='none';
+}
+
+function checkout() {
+  if(!S.cart.length){toast('Keranjang kosong!',true);return;}
+  const buyer = document.getElementById('buyer-name').value.trim()||'Pembeli Umum';
+  const phone = document.getElementById('buyer-phone').value.trim();
+  const note = document.getElementById('buyer-note').value.trim();
+  const disc = parseFloat(document.getElementById('cart-discount').value)||0;
+  const method = document.getElementById('pay-method').value;
+  const sub = S.cart.reduce((s,c)=>s+c.price*c.qty,0);
+  const total = Math.max(0,sub-disc);
+  const bayar = parseFloat(document.getElementById('bayar-input').value)||0;
+  if(method==='Tunai'&&bayar<total){toast('Jumlah bayar kurang!',true);return;}
+
+  S.cart.forEach(c=>{const a=S.animals.find(x=>x.id===c.animalId);if(a)a.stock-=c.qty;});
+
+  const tx = {
+    id:'TX'+Date.now(),
+    invNo:'INV-'+String(S.transactions.length+1).padStart(4,'0'),
+    date:new Date().toISOString(),
+    buyer,phone,note,
+    items:S.cart.map(c=>({...c})),
+    subtotal:sub,discount:disc,total,
+    method,bayar,kembalian:method==='Tunai'?bayar-total:0,
+    status:'Selesai'
+  };
+  S.transactions.push(tx);
+  save();
+
+  const copy = [...S.cart];
+  S.cart=[];
+  ['buyer-name','buyer-phone','buyer-note','bayar-input'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('cart-discount').value=0;
+  renderCart(); renderAnimalGrid(); updateBadges();
+  toast('✅ '+tx.invNo+' berhasil!');
+  printInvoice(tx);
+}
+
+// ══════════════════════════════════════════════
+//  STOCK
+// ══════════════════════════════════════════════
+function renderStockList() {
+  const el = document.getElementById('stock-list');
+  if(!S.animals.length){el.innerHTML='<div class="text-muted" style="text-align:center;padding:30px;font-size:12px;">Belum ada hewan. Tap + Tambah.</div>';return;}
+  el.innerHTML = S.animals.map(a=>{
+    const sold = S.transactions.reduce((s,t)=>s+t.items.filter(i=>i.animalId===a.id).reduce((ss,i)=>ss+i.qty,0),0);
+    const pct = Math.min(100,a.stock/(a.stock+sold+0.01)*100);
+    return `<div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div style="flex:1;">
+          <div style="font-size:16px;margin-bottom:4px;">${EMOJI[a.type]||'🐾'}</div>
+          <div class="fw-bold" style="font-size:14px;">${a.name}</div>
+          <div class="text-muted" style="font-size:11px;">${a.type} · ${a.weight}kg · Modal ${fmt(a.modal)}</div>
+          <div class="text-gold fw-bold" style="font-size:14px;margin-top:3px;">${fmt(a.price)}</div>
+          <div class="stock-bar" style="margin-top:6px;"><div class="stock-fill" style="width:${pct}%;background:${pct<20?'var(--red)':pct<50?'var(--gold)':'var(--green)'};"></div></div>
+          <div style="font-size:11px;color:${a.stock<=2?'var(--red2)':'var(--text2)'};margin-top:3px;">${a.stock} ekor tersisa · Terjual ${sold}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-left:10px;">
+          <span class="badge ${a.condition==='Sehat'?'badge-green':'badge-gold'}" style="font-size:9px;">${a.condition}</span>
+          <button class="btn btn-secondary btn-sm" onclick="openAnimalModal('${a.id}')">Edit</button>
+          <button class="btn btn-red btn-sm" onclick="delAnimal('${a.id}')">Hapus</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAnimalModal(id) {
+  const a = id ? S.animals.find(x=>x.id===id) : null;
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.innerHTML = `<div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">${a?'Edit':'Tambah'} Hewan</div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Jenis</label>
+          <select id="m-type"><option>Sapi</option><option>Kambing</option><option>Domba</option><option>Unta</option><option>Kerbau</option><option>Lainnya</option></select>
+        </div>
+        <div class="form-group"><label>Nama</label><input type="text" id="m-name" value="${a?.name||''}" placeholder="cth: Sapi Limosin 01"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Berat (kg)</label><input type="number" id="m-weight" inputmode="decimal" value="${a?.weight||''}"></div>
+        <div class="form-group"><label>Stok (ekor)</label><input type="number" id="m-stock" inputmode="numeric" value="${a?.stock||''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Harga Jual</label><input type="number" id="m-price" inputmode="numeric" value="${a?.price||''}"></div>
+        <div class="form-group"><label>Harga Modal</label><input type="number" id="m-modal" inputmode="numeric" value="${a?.modal||''}"></div>
+      </div>
+      <div class="form-group"><label>Kondisi</label>
+        <select id="m-cond"><option>Sehat</option><option>Sakit</option><option>Karantina</option></select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1;" onclick="this.closest('.modal-backdrop').remove()">Batal</button>
+      <button class="btn btn-primary" style="flex:2;" id="m-save">Simpan</button>
+    </div>
+  </div>`;
+  document.getElementById('modal-container').appendChild(backdrop);
+  if(a){
+    document.getElementById('m-type').value=a.type;
+    document.getElementById('m-cond').value=a.condition;
+  }
+  backdrop.addEventListener('click',e=>{if(e.target===backdrop)backdrop.remove();});
+  document.getElementById('m-save').onclick=()=>{
+    const type=document.getElementById('m-type').value;
+    const name=document.getElementById('m-name').value.trim();
+    const weight=parseFloat(document.getElementById('m-weight').value)||0;
+    const stock=parseInt(document.getElementById('m-stock').value)||0;
+    const price=parseFloat(document.getElementById('m-price').value)||0;
+    const modal=parseFloat(document.getElementById('m-modal').value)||0;
+    const condition=document.getElementById('m-cond').value;
+    if(!name){toast('Nama wajib diisi!',true);return;}
+    if(a){Object.assign(a,{type,name,weight,stock,price,modal,condition});}
+    else S.animals.push({id:'A'+Date.now(),type,name,weight,stock,price,modal,condition,added:new Date().toISOString()});
+    save(); renderStockList(); updateBadges(); backdrop.remove();
+    toast(a?'Hewan diperbarui.':'Hewan ditambahkan.');
+  };
+}
+
+function delAnimal(id) {
+  if(!confirm('Hapus hewan ini?'))return;
+  S.animals=S.animals.filter(a=>a.id!==id);
+  save(); renderStockList(); updateBadges();
+  toast('Hewan dihapus.');
+}
+
+// ══════════════════════════════════════════════
+//  TRANSACTIONS
+// ══════════════════════════════════════════════
+function renderTransactions() {
+  const fd = document.getElementById('tx-filter')?.value;
+  let txs = [...S.transactions].reverse();
+  if(fd) txs=txs.filter(t=>t.date.startsWith(fd));
+  const el = document.getElementById('tx-list');
+  if(!txs.length){el.innerHTML='<div class="text-muted" style="text-align:center;padding:30px;font-size:12px;">Tidak ada transaksi</div>';return;}
+  el.innerHTML = txs.map(t=>`
+    <div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div class="fw-bold" style="font-size:14px;">${t.buyer}</div>
+          <div class="text-muted" style="font-size:10px;">${t.invNo} · ${fmtD(t.date)} ${fmtT(t.date)}</div>
+          <div style="font-size:11px;margin-top:4px;">${t.items.map(i=>i.name+'×'+i.qty).join(', ')}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px;">${t.method}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="text-gold fw-bold" style="font-size:15px;">${fmt(t.total)}</div>
+          <span class="badge ${t.status==='Void'?'badge-gold':'badge-green'}" style="font-size:9px;margin-top:4px;">${t.status}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="printInvoice(S.transactions.find(x=>x.id==='${t.id}'))">🖨️ Invoice</button>
+        ${t.status!=='Void'?`<button class="btn btn-red btn-sm" onclick="voidTx('${t.id}')">Void</button>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function voidTx(id) {
+  if(!confirm('Batalkan transaksi? Stok akan dikembalikan.'))return;
+  const tx=S.transactions.find(x=>x.id===id);
+  if(!tx)return;
+  tx.items.forEach(c=>{const a=S.animals.find(x=>x.id===c.animalId);if(a)a.stock+=c.qty;});
+  tx.status='Void';
+  save(); renderTransactions(); updateBadges();
+  toast('Transaksi dibatalkan.');
+}
+
+// ══════════════════════════════════════════════
+//  REPORT
+// ══════════════════════════════════════════════
+function initReport() {
+  const today=new Date().toISOString().split('T')[0];
+  const first=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString().split('T')[0];
+  document.getElementById('rpt-from').value=first;
+  document.getElementById('rpt-to').value=today;
+  generateReport();
+}
+
+function generateReport() {
+  const from=document.getElementById('rpt-from').value;
+  const to=document.getElementById('rpt-to').value;
+  const txs=S.transactions.filter(t=>{
+    if(t.status==='Void')return false;
+    const d=t.date.split('T')[0];
+    return(!from||d>=from)&&(!to||d<=to);
+  });
+  const total=txs.reduce((s,t)=>s+t.total,0);
+  const modal=txs.reduce((s,t)=>s+t.items.reduce((ss,i)=>ss+(i.modal||0)*i.qty,0),0);
+  document.getElementById('r-total').textContent=fmt(total);
+  document.getElementById('r-modal').textContent=fmt(modal);
+  document.getElementById('r-laba').textContent=fmt(total-modal);
+  document.getElementById('r-count').textContent=txs.length;
+
+  const byType={};
+  txs.forEach(t=>t.items.forEach(i=>{
+    if(!byType[i.type])byType[i.type]={qty:0,rev:0,modal:0};
+    byType[i.type].qty+=i.qty;byType[i.type].rev+=i.price*i.qty;byType[i.type].modal+=(i.modal||0)*i.qty;
+  }));
+  document.getElementById('r-by-type').innerHTML=Object.entries(byType).map(([type,d])=>`
+    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px;">
+      <span>${EMOJI[type]||'🐾'} ${type} (${d.qty} ekor)</span>
+      <div style="text-align:right;">
+        <div class="text-gold fw-bold">${fmt(d.rev)}</div>
+        <div class="text-green" style="font-size:11px;">Laba ${fmt(d.rev-d.modal)}</div>
+      </div>
+    </div>`).join('')||'<div class="text-muted" style="text-align:center;padding:20px;font-size:12px;">Tidak ada data</div>';
+
+  document.getElementById('r-tx-body').innerHTML=txs.map(t=>{
+    const m=t.items.reduce((s,i)=>s+(i.modal||0)*i.qty,0);
+    return `<tr>
+      <td>${t.invNo}</td><td>${fmtD(t.date)}</td><td>${t.buyer}</td>
+      <td class="text-gold">${fmt(t.total)}</td>
+      <td class="${(t.total-m)>=0?'text-green':'text-red'}">${fmt(t.total-m)}</td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--text3);">Kosong</td></tr>';
+}
+
+// ══════════════════════════════════════════════
+//  SETTINGS
+// ══════════════════════════════════════════════
+function loadSettings() {
+  const s=S.settings;
+  document.getElementById('s-name').value=s.name||'';
+  document.getElementById('s-address').value=s.address||'';
+  document.getElementById('s-phone').value=s.phone||'';
+  document.getElementById('s-city').value=s.city||'';
+  document.getElementById('s-inv-note').value=s.invNote||'';
+}
+
+function saveSettings() {
+  S.settings={
+    name:document.getElementById('s-name').value,
+    address:document.getElementById('s-address').value,
+    phone:document.getElementById('s-phone').value,
+    city:document.getElementById('s-city').value,
+    invNote:document.getElementById('s-inv-note').value,
+  };
+  save(); toast('Pengaturan disimpan!');
+}
+
+function exportData() {
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='siqurban_backup_'+new Date().toISOString().split('T')[0]+'.json';a.click();
+}
+
+function resetAll() {
+  if(!confirm('YAKIN reset semua data?'))return;
+  localStorage.removeItem('siqurban_pwa_v2');
+  location.reload();
+}
+
+// ══════════════════════════════════════════════
+//  INVOICE PRINT
+// ══════════════════════════════════════════════
+function printInvoice(tx) {
+  if(!tx)return;
+  const s=S.settings;
+  document.getElementById('invoice-print').innerHTML=`
+    <div class="inv-header">
+      <div>
+        <div class="inv-title">${s.name}</div>
+        <div style="font-size:10px;color:#666;letter-spacing:.1em;text-transform:uppercase;">Invoice Hewan Qurban</div>
+        <div style="font-size:11px;margin-top:4px;">${s.address}<br>${s.city} · ${s.phone}</div>
+      </div>
+      <div style="text-align:right;font-size:11px;">
+        <div style="font-size:18px;font-weight:800;">${tx.invNo}</div>
+        <div>${fmtD(tx.date)} · ${fmtT(tx.date)}</div>
+        <div>${tx.method}</div>
+      </div>
+    </div>
+    <div style="margin-bottom:14px;font-size:12px;">
+      <strong>Kepada:</strong> ${tx.buyer}${tx.phone?'<br>'+tx.phone:''}
+      ${tx.note?'<br><em>'+tx.note+'</em>':''}
+    </div>
+    <table class="inv-table">
+      <thead><tr><th>#</th><th>Nama</th><th>Harga</th><th>Qty</th><th>Total</th></tr></thead>
+      <tbody>${tx.items.map((item,i)=>`<tr>
+        <td>${i+1}</td><td>${item.name}<br><small style="color:#888;">${item.type}</small></td>
+        <td>${fmt(item.price)}</td><td>${item.qty}</td><td>${fmt(item.price*item.qty)}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+    <div class="inv-total">
+      ${tx.discount?`<div>Diskon: (${fmt(tx.discount)})</div>`:''}
+      <div class="inv-total-final">TOTAL: ${fmt(tx.total)}</div>
+      ${tx.method==='Tunai'?`<div>Dibayar: ${fmt(tx.bayar)} | Kembalian: ${fmt(tx.kembalian)}</div>`:''}
+    </div>
+    <div class="inv-stamps">
+      <div class="inv-stamp">Pembeli<br><br><br><br>(${tx.buyer})</div>
+      <div class="inv-stamp">Penjual<br><br><br><br>(${s.name})</div>
+    </div>
+    <div class="inv-footer">${s.invNote||''}<br>Dicetak SiQurban POS</div>`;
+  window.print();
+}
+
+// ══════════════════════════════════════════════
+//  PWA INIT
+// ══════════════════════════════════════════════
+// Clock
+function tick() {
+  const now = new Date();
+  document.getElementById('page-date').textContent = now.toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+}
+tick(); setInterval(tick, 60000);
+
+// Splash
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('hide');
+    setTimeout(() => document.getElementById('splash').style.display='none', 600);
+  }, 1800);
+});
+
+// Offline detection
+window.addEventListener('online', () => document.getElementById('offline-banner').classList.remove('show'));
+window.addEventListener('offline', () => document.getElementById('offline-banner').classList.add('show'));
+if(!navigator.onLine) document.getElementById('offline-banner').classList.add('show');
+
+// PWA Install
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  document.getElementById('install-banner').style.display = 'block';
+});
+document.getElementById('install-btn').addEventListener('click', async () => {
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  const {outcome} = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('install-banner').style.display = 'none';
+  if(outcome==='accepted') toast('✅ SiQurban berhasil diinstall!');
+});
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-banner').style.display = 'none';
+  toast('🎉 Aplikasi terinstall!');
+});
+
+// Service Worker
+if('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      console.log('SW registered:', reg.scope);
+    }).catch(err => console.log('SW error:', err));
+  });
+}
+
+// Init
+load();
+renderDashboard();
+updateBadges();
+toggleBayar();
+</script>
+</body>
+</html>
